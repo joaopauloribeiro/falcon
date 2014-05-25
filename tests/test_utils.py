@@ -1,11 +1,17 @@
+# -*- coding: utf-8-*-
+
 from datetime import datetime
 import functools
+import io
 import random
+import sys
 
 import testtools
 import six
 
 import falcon
+import falcon.testing
+from falcon import util
 from falcon.util import uri
 
 
@@ -25,6 +31,26 @@ class TestFalconUtils(testtools.TestCase):
         # NOTE(cabrera): for DRYness - used in uri.[de|en]code tests
         # below.
         self.uris = _arbitrary_uris(count=100, length=32)
+
+    def test_deprecated_decorator(self):
+        msg = 'Please stop using this thing. It is going away.'
+
+        @util.deprecated(msg)
+        def old_thing():
+            pass
+
+        if six.PY3:
+            stream = io.StringIO()
+        else:
+            stream = io.BytesIO()
+
+        old_stderr = sys.stderr
+        sys.stderr = stream
+
+        old_thing()
+
+        sys.stderr = old_stderr
+        self.assertIn(msg, stream.getvalue())
 
     def test_dt_to_http(self):
         self.assertEqual(
@@ -158,3 +184,25 @@ class TestFalconUtils(testtools.TestCase):
             expect = stdlib_unquote(case)
             actual = uri.decode(case)
             self.assertEqual(expect, actual)
+
+
+class TestFalconTesting(falcon.testing.TestBase):
+    """Catch some uncommon branches not covered elsewhere."""
+
+    def test_unicode_path_in_create_environ(self):
+        if six.PY3:
+            self.skip('Test does not apply to Py3K')
+
+        env = falcon.testing.create_environ(u'/fancy/unícode')
+        self.assertEqual(env['PATH_INFO'], '/fancy/un\xc3\xadcode')
+
+        env = falcon.testing.create_environ(u'/simple')
+        self.assertEqual(env['PATH_INFO'], '/simple')
+
+    def test_none_header_value_in_create_environ(self):
+        env = falcon.testing.create_environ('/', headers={'X-Foo': None})
+        self.assertEqual(env['HTTP_X_FOO'], '')
+
+    def test_decode_empty_result(self):
+        body = self.simulate_request('/', decode='utf-8')
+        self.assertEqual(body, '')

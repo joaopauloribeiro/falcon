@@ -1,20 +1,16 @@
-"""Defines helper functions for unit testing.
-
-Copyright 2013 by Rackspace Hosting, Inc.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-   http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
-"""
+# Copyright 2013 by Rackspace Hosting, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import random
 import io
@@ -30,11 +26,10 @@ DEFAULT_HOST = 'falconframework.org'
 
 
 def httpnow():
-    """Returns the current UTC time as an HTTP date
+    """Returns the current UTC time as an RFC 1123 date.
 
     Returns:
-        An HTTP date string, e.g., "Tue, 15 Nov 1994 12:45:26 GMT". See
-        also: http://goo.gl/R7So4
+        str: An HTTP date string, e.g., "Tue, 15 Nov 1994 12:45:26 GMT".
 
     """
 
@@ -42,11 +37,11 @@ def httpnow():
 
 
 def rand_string(min, max):
-    """Returns a randomly-generated string, of a random length
+    """Returns a randomly-generated string, of a random length.
 
     Args:
-        min: Minimum string length to return, inclusive
-        max: Maximum string length to return, inclusive
+        min (int): Minimum string length to return, inclusive
+        max (int): Maximum string length to return, inclusive
 
     """
 
@@ -58,33 +53,39 @@ def rand_string(min, max):
 
 def create_environ(path='/', query_string='', protocol='HTTP/1.1', port='80',
                    headers=None, app='', body='', method='GET',
-                   wsgierrors=None):
+                   wsgierrors=None, file_wrapper=None):
 
-    """ Creates a 'mock' PEP-3333 environ dict for simulating WSGI requests
+    """Creates a mock PEP-3333 environ dict for simulating WSGI requests.
 
     Args:
-        path: The path for the request (default '/')
-        query_string: The query string to simulate, without a
+        path (str, optional): The path for the request (default '/')
+        query_string (str, optional): The query string to simulate, without a
             leading '?' (default '')
-        protocol: The HTTP protocol to simulate (default 'HTTP/1.1')
-        port: The TCP port to simulate (default '80')
-        headers: Optional headers to set as a dict or an iterable of tuples
-            that can be converted to a dict (default None)
-        app: Value for the SCRIPT_NAME environ variable, described in
+        protocol (str, optional): The HTTP protocol to simulate
+            (default 'HTTP/1.1')
+        port (str, optional): The TCP port to simulate (default '80')
+        headers (dict or list, optional): Headers as a dict or an
+            iterable collection of ``(key, value)`` tuples
+        app (str): Value for the SCRIPT_NAME environ variable, described in
             PEP-333: 'The initial portion of the request URL's "path" that
             corresponds to the application object, so that the application
             knows its virtual "location". This may be an empty string, if the
             application corresponds to the "root" of the server.' (default '')
-        body: The body of the request (default '')
-        method: The HTTP method to use (default 'GET')
-        wsgierrors: The stream to use as wsgierrors (default sys.stderr)
+        body (str or unicode): The body of the request (default '')
+        method (str): The HTTP method to use (default 'GET')
+        wsgierrors (io): The stream to use as wsgierrors (default sys.stderr)
+        file_wrapper: Callable that returns an iterable, to be used as
+            the value for 'wsgi.file_wrapper' in the environ.
 
     """
 
     body = io.BytesIO(body.encode('utf-8')
                       if isinstance(body, six.text_type) else body)
 
-    if six.PY2 and isinstance(path, unicode):
+    # NOTE(kgriffs): nocover since this branch will never be
+    # taken in Python3. However, the branch is tested under Py2,
+    # in test_utils.TestFalconTesting.test_unicode_path_in_create_environ
+    if six.PY2 and isinstance(path, unicode):  # pragma: nocover
         path = path.encode('utf-8')
 
     env = {
@@ -108,6 +109,9 @@ def create_environ(path='/', query_string='', protocol='HTTP/1.1', port='80',
         'wsgi.multiprocess': True,
         'wsgi.run_once': False
     }
+
+    if file_wrapper is not None:
+        env['wsgi.file_wrapper'] = file_wrapper
 
     if protocol != 'HTTP/1.0':
         env['HTTP_HOST'] = DEFAULT_HOST

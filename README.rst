@@ -34,7 +34,7 @@ the code lean, making Falcon easier to test, optimize, and deploy.
 
 **Flexible.** Falcon can be deployed in a variety of ways, depending on
 your needs. The framework speaks WSGI, and works great with `Python 2.6
-and 2.7, PyPy, and Python 3.3 <https://travis-ci.org/racker/falcon>`__.
+and 2.7, PyPy, and Python 3.3/3.4 <https://travis-ci.org/racker/falcon>`__.
 There's no tight coupling with any async framework, leaving you free to
 mix-and-match what you need.
 
@@ -48,7 +48,7 @@ Features
 -  DRY request processing using global, resource, and method hooks
 -  Snappy unit testing through WSGI helpers and mocks
 -  20% speed boost when Cython is available
--  Python 2.6, Python 2.7, PyPy and Python 3.3 support
+-  Python 2.6, Python 2.7, PyPy and Python 3.3/3.4 support
 -  Speed, speed, and more speed!
 
 Install
@@ -60,13 +60,22 @@ Install
 
 **Installing on OS X Mavericks with Xcode 5.1**
 
-Xcode Command Line Tools are required to compile cython. Install with this command:
+Xcode Command Line Tools are required to compile Cython. Install them with
+this command:
 
 .. code:: bash
 
     $ xcode-select --install
 
-Xcode 5.1 CLang compiler treats unrecognized command-line options as errors; to compile you must silence warnings for unused driver arguments:
+The Xcode 5.1 CLang compiler treats unrecognized command-line options as
+errors; this can cause problems under Python 2.6, for example:
+
+.. code:: bash
+
+    clang: error: unknown argument: '-mno-fused-madd' [-Wunused-command-line-argument-hard-error-in-future]
+
+You can work around errors caused by unused arguments by setting some
+environment variables:
 
 .. code:: bash
 
